@@ -1,0 +1,5 @@
+{
+  "name": "AI Video Analysis Pipeline",
+  "description": "A simulation of a multi-stage AI process for deep video content analysis. It takes a mock video transcript, summarizes utterances, models topics, analyzes visual frames, and generates a final comprehensive report.",
+  "requestFramePermissions": []
+}

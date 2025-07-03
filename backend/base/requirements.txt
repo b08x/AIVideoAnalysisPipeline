@@ -1,0 +1,32 @@
+# requirements.txt
+# This file lists all Python dependencies for the backend services.
+# It is used by the base/Dockerfile to build a common environment.
+
+# --- Web Framework & Server ---
+fastapi
+uvicorn[standard]
+
+# --- Asynchronous Task Queue ---
+celery
+redis
+
+# --- Database ---
+SQLAlchemy
+psycopg2-binary
+
+# --- Computer Vision & OCR ---
+# Using the headless version as we don't need a GUI on the server
+opencv-python-headless
+easyocr
+
+# --- NLP, Embeddings & AI SDKs ---
+# sentence-transformers will pull in torch and transformers
+sentence-transformers
+scikit-learn
+openai
+tenacity
+
+# --- Reporting & Utilities ---
+Jinja2
+markdown-pdf
+python-dotenv
