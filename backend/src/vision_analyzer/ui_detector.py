@@ -3,8 +3,13 @@ import easyocr
 import numpy as np
 import os
 import shutil
+import logging
+import signal
 from typing import List
 from vision_analyzer.models import DetectedElement
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 class UIDetector:
     """
@@ -13,30 +18,39 @@ class UIDetector:
     def __init__(self, languages: List[str] = ['en']):
         # This will download the model on the first run.
         # It's recommended to have this pre-downloaded in the Docker image.
+        logger.info(f"Initializing UIDetector with languages: {languages}")
         self.reader = None
         self.languages = languages
         self._initialize_reader()
 
     def _initialize_reader(self):
         """Initialize EasyOCR reader with error handling for corrupted models."""
+        logger.info("Starting EasyOCR reader initialization...")
+        
         try:
+            logger.info("Creating EasyOCR Reader (this may download models on first run)...")
             self.reader = easyocr.Reader(self.languages, gpu=False) # Set gpu=True if a GPU is available
+            logger.info("EasyOCR reader initialized successfully")
         except Exception as e:
-            print(f"Error initializing EasyOCR reader: {e}")
+            logger.error(f"Error initializing EasyOCR reader: {e}")
             # Try to clear the model cache and retry
             try:
-                print("Attempting to clear EasyOCR model cache...")
+                logger.warning("Attempting to clear EasyOCR model cache...")
                 # Clear the EasyOCR model cache directory
                 cache_dir = os.path.expanduser('~/.EasyOCR')
                 if os.path.exists(cache_dir):
+                    logger.info(f"Removing EasyOCR cache directory: {cache_dir}")
                     shutil.rmtree(cache_dir)
-                    print("EasyOCR cache cleared, retrying initialization...")
+                    logger.info("EasyOCR cache cleared, retrying initialization...")
                     self.reader = easyocr.Reader(self.languages, gpu=False)
+                    logger.info("EasyOCR reader initialized successfully after cache clear")
                 else:
-                    print("EasyOCR cache directory not found, retrying initialization...")
+                    logger.info("EasyOCR cache directory not found, retrying initialization...")
                     self.reader = easyocr.Reader(self.languages, gpu=False)
+                    logger.info("EasyOCR reader initialized successfully on retry")
             except Exception as retry_error:
-                print(f"Failed to initialize EasyOCR reader even after cache clear: {retry_error}")
+                logger.error(f"Failed to initialize EasyOCR reader even after cache clear: {retry_error}")
+                logger.warning("Disabling OCR functionality for this session")
                 self.reader = None
 
     def detect(self, image_path: str) -> List[DetectedElement]:

@@ -94,6 +94,21 @@ export interface ProgressUpdate {
     };
 }
 
+// Enhanced progress update structure from the new backend
+export interface DetailedProgressUpdate {
+    type: 'connected' | 'heartbeat' | 'stage_progress' | 'step_progress' | 'error' | 'completion';
+    stage?: string;
+    step?: string;
+    progress?: number;
+    current?: number;
+    total?: number;
+    details?: Record<string, any>;
+    error?: string;
+    result?: Record<string, any>;
+    message?: string;
+    timestamp: string;
+}
+
 // Represents the frontend's view of the job's progress
 export interface JobProgress {
     jobId: string;

@@ -11,12 +11,22 @@ from vision_analyzer.models import FrameAnalysis
 # Using OpenRouter to potentially access various models like GPT-4V or Claude Vision
 client = OpenAI(api_key=os.getenv("OPENROUTER_API_KEY"), base_url="https://openrouter.ai/api/v1")
 
-# Initialize the UI detector with error handling
-try:
-    ui_detector = UIDetector()
-except Exception as e:
-    print(f"Warning: Failed to initialize UIDetector: {e}")
-    ui_detector = None
+# UI detector will be initialized lazily when first needed
+ui_detector = None
+
+def get_ui_detector():
+    """Lazy initialization of UIDetector to avoid blocking module import"""
+    global ui_detector
+    if ui_detector is None:
+        try:
+            print("Initializing UIDetector (lazy initialization)...")
+            ui_detector = UIDetector()
+            print("UIDetector initialized successfully")
+        except Exception as e:
+            print(f"Warning: Failed to initialize UIDetector: {e}")
+            ui_detector = False  # Use False to indicate failed initialization
+    
+    return ui_detector if ui_detector is not False else None
 
 def encode_image_to_base64(image_path: str) -> str:
     """Encodes an image file to a base64 string."""
@@ -69,8 +79,9 @@ def process_single_frame(frame_path: str, contextual_text: str) -> FrameAnalysis
         ai_description = f"Failed to analyze frame with vision model: {e}"
 
     # 3. Detect UI elements using local OCR
-    if ui_detector is not None:
-        detected_elements = ui_detector.detect(frame_path)
+    ui_detector_instance = get_ui_detector()
+    if ui_detector_instance is not None:
+        detected_elements = ui_detector_instance.detect(frame_path)
     else:
         detected_elements = []
 

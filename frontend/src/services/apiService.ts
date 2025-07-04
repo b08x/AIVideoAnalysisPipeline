@@ -3,6 +3,7 @@ import {
     UploadResponse,
     JobResponse,
     ProgressUpdate,
+    DetailedProgressUpdate,
     ModelConfig,
     FrameAnalysis
 } from '../types';
@@ -74,6 +75,34 @@ class ApiService {
                 const data = JSON.parse(event.data) as ProgressUpdate;
                 onProgress(data);
             } catch (error) {
+                onError('Failed to parse progress data.');
+            }
+        };
+        this.ws.onerror = () => { onError('WebSocket connection failed.'); };
+        this.ws.onclose = () => { console.log('WebSocket connection closed.'); };
+    }
+
+    public connectToDetailedProgress(
+        jobId: string,
+        onProgress: (data: DetailedProgressUpdate) => void,
+        onError: (error: string) => void
+    ): void {
+        if (this.ws) {
+            this.ws.close();
+        }
+        // Dynamically construct WebSocket URL for reverse proxy
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsHost = window.location.host;
+        const wsUrl = `${wsProtocol}//${wsHost}/ws/jobs/${jobId}/progress`;
+        
+        this.ws = new WebSocket(wsUrl);
+
+        this.ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data) as DetailedProgressUpdate;
+                onProgress(data);
+            } catch (error) {
+                console.error('Failed to parse detailed progress data:', error);
                 onError('Failed to parse progress data.');
             }
         };

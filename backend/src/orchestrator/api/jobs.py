@@ -14,6 +14,7 @@ import shutil
 import orchestrator.models as models
 from orchestrator.models import Job, JobStatus
 from orchestrator.tasks import process_video_job
+from orchestrator.logging_config import orchestrator_logger
 
 
 # Dependency to get a DB session
@@ -44,43 +45,69 @@ async def create_job(
     """
     Handles file uploads, creates a job record, and dispatches the main processing task.
     """
+    orchestrator_logger.info("=== NEW JOB CREATION REQUEST ===")
+    orchestrator_logger.info(f"Video file: {video_file.filename if video_file else 'None'}")
+    orchestrator_logger.info(f"Subtitle file: {subtitle_file.filename if subtitle_file else 'None'}")
+    
     # Basic validation
     if not video_file or not video_file.filename:
+        orchestrator_logger.error("Video file validation failed: no file provided")
         raise HTTPException(status_code=422, detail="Video file is required")
     
     if video_file.filename == "":
+        orchestrator_logger.error("Video file validation failed: empty filename")
         raise HTTPException(status_code=422, detail="Video filename cannot be empty")
     # Create a new job record in the database
+    orchestrator_logger.info("Creating new job record in database")
     new_job = Job(status=JobStatus.PENDING)
     db.add(new_job)
     db.commit()
     db.refresh(new_job)
     job_id = new_job.id
+    orchestrator_logger.info(f"Created job with ID: {job_id}")
 
     # Define storage path for this job
     job_storage_path = os.path.join(SHARED_STORAGE_PATH, str(job_id))
+    orchestrator_logger.info(f"Creating job storage directory: {job_storage_path}")
     os.makedirs(job_storage_path, exist_ok=True)
 
     # Save video file
     video_file_path = os.path.join(job_storage_path, video_file.filename)
+    orchestrator_logger.info(f"Saving video file to: {video_file_path}")
     with open(video_file_path, "wb") as buffer:
         shutil.copyfileobj(video_file.file, buffer)
+    orchestrator_logger.info(f"Video file saved, size: {os.path.getsize(video_file_path)} bytes")
 
     # Save subtitle file if provided
     subtitle_file_path = None
     if subtitle_file:
         subtitle_file_path = os.path.join(job_storage_path, subtitle_file.filename)
+        orchestrator_logger.info(f"Saving subtitle file to: {subtitle_file_path}")
         with open(subtitle_file_path, "wb") as buffer:
             shutil.copyfileobj(subtitle_file.file, buffer)
+        orchestrator_logger.info(f"Subtitle file saved, size: {os.path.getsize(subtitle_file_path)} bytes")
+    else:
+        orchestrator_logger.info("No subtitle file provided")
 
     # Update the job record with file paths
+    orchestrator_logger.info("Updating job record with file paths")
     new_job.video_file_path = video_file_path
     new_job.subtitle_file_path = subtitle_file_path
     db.commit()
+    orchestrator_logger.info("Job record updated successfully")
 
     # Dispatch the background task to the default queue
-    process_video_job.apply_async(args=[job_id, video_file_path, subtitle_file_path], queue='default')
+    orchestrator_logger.info(f"Dispatching background task for job {job_id}")
+    orchestrator_logger.info(f"Task args: job_id={job_id}, video_path={video_file_path}, subtitle_path={subtitle_file_path}")
+    
+    try:
+        task_result = process_video_job.apply_async(args=[job_id, video_file_path, subtitle_file_path], queue='default')
+        orchestrator_logger.info(f"Task dispatched successfully, task_id: {task_result.id}")
+    except Exception as e:
+        orchestrator_logger.error(f"Failed to dispatch task: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to start processing: {e}")
 
+    orchestrator_logger.info(f"Job {job_id} creation completed successfully")
     return {"job_id": job_id, "status": "pending"}
 
 

@@ -49,11 +49,15 @@ services:
       - video-analysis-net
 
   redis:
-    image: redis:7-alpine
+    image: redis/redis-stack:latest
     container_name: video-analysis-redis
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
+    ports:
+      - "6379:6379"
+      - "8081:8081"
+      - "8001:8001"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
