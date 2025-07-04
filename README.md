@@ -20,25 +20,44 @@ The application uses a **distributed microservices architecture** with the follo
 
 ```shell
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   React Frontend│    │   FastAPI       │    │   Celery        │
+│   React Frontend │    │   FastAPI       │    │   Celery        │
 │   (Vite + TS)   │◄──►│   Orchestrator  │◄──►│   Workers (4)   │
 │   Port 3000     │    │   Port 8000     │    │   Distributed   │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         │                       ▼                       ▼
-         │              ┌─────────────────┐    ┌─────────────────┐
-         │              │   PostgreSQL    │    │     Redis       │
-         │              │   (Metadata)    │    │  (Task Queue)   │
-         │              │   Port 5432     │    │   Port 6379     │
-         │              └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         └───────────────────────┼───────────────────────┘
-                                 ▼
-                       ┌─────────────────┐
-                       │     MinIO       │
-                       │ (Object Storage)│
-                       │   Port 9000     │
-                       └─────────────────┘
+        │                       │                       │
+        │                       ▼                       ▼
+        │              ┌─────────────────┐    ┌─────────────────┐
+        │              │   PostgreSQL    │    │     Redis       │
+        │              │   (Metadata)    │    │  (Task Queue)   │
+        │              │   Port 5432     │    │   Port 6379     │
+        │              └─────────────────┘    └─────────────────┘
+        │                       │                       │
+        └───────────────────────┼───────────────────────┘
+                                ▼
+                      ┌─────────────────┐
+                      │     MinIO       │
+                      │ (Object Storage) │
+                      │   Port 9000     │
+                      └─────────────────┘
+```
+
+### Production Environment
+
+For production deployment, the system includes:
+
+```shell
+┌─────────────────┐
+│     Nginx       │
+│  (Reverse Proxy) │
+│   Port 80       │
+└─────────────────┘
+        │
+        ▼
+┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │   FastAPI       │
+│ (Production)    │    │   Orchestrator  │
+│   Port 3000     │    │   Port 8000     │
+└─────────────────┘    └─────────────────┘
 ```
 
 ### Backend Services
@@ -50,6 +69,7 @@ The application uses a **distributed microservices architecture** with the follo
 - **PostgreSQL**: Job metadata, results, and state management
 - **Redis**: Message broker for Celery task queue
 - **MinIO**: S3-compatible object storage for files and generated reports
+- **Nginx**: Reverse proxy for production deployment
 
 **Worker Services:**
 
@@ -108,9 +128,17 @@ cp .env.local.example .env.local
 npm run dev
 ```
 
-### 3. Access the Application
+### 3. Production Deployment
 
-- **Frontend**: <http://localhost:3000>
+```bash
+# Build and start production environment
+docker-compose -f docker-compose.prod.yml up --build
+```
+
+### 4. Access the Application
+
+- **Development Frontend**: <http://localhost:3000>
+- **Production Frontend**: <http://localhost>
 - **Backend API**: <http://localhost:8000>
 - **MinIO Console**: <http://localhost:9001> (admin/admin123)
 
@@ -157,6 +185,9 @@ The system implements a **7-stage asynchronous pipeline**:
 - **Input**: All processed data (utterances, topics, visual analyses)
 - **Processing**: Generate structured reports using Jinja2 templates
 - **Output**: Markdown and PDF reports with complete insights
+  - **Multiple Formats**: Reports can be generated in both Markdown (.md) and PDF formats
+  - **Comprehensive Content**: Includes all analysis results, visualizations, and metadata
+  - **Structured Layout**: Organized by processing stages with clear section separation
 
 ### Stage 7: Completion
 
@@ -293,7 +324,7 @@ The system supports extensive AI model configuration:
 
 ## 📁 Project Structure
 
-```
+```shell
 AIVideoAnalysisPipeline/
 ├── backend/
 │   ├── base/                     # Base Docker image with common dependencies
@@ -327,6 +358,7 @@ AIVideoAnalysisPipeline/
 │   ├── package.json              # Frontend dependencies
 │   └── vite.config.ts            # Vite configuration
 ├── docker-compose.dev.yml        # Development environment
+├── docker-compose.prod.yml       # Production environment with Nginx
 └── README.md                     # This file
 ```
 
@@ -339,16 +371,24 @@ AIVideoAnalysisPipeline/
 - Create new analysis job
 - Upload video and subtitle files
 - Configure AI model parameters
+- Returns job ID for tracking
 
 **GET** `/api/v1/jobs/{job_id}`
 
 - Get job status and results
-- Download generated reports
+- View processing progress
+- Check for completion
 
 **DELETE** `/api/v1/jobs/{job_id}`
 
 - Cancel running job
 - Clean up resources
+
+**GET** `/api/v1/jobs/{job_id}/report`
+
+- Download the generated report for a completed job
+- Supports both 'md' (markdown) and 'pdf' formats
+- Example: `/api/v1/jobs/123/report?format=pdf`
 
 ### WebSocket Events
 
