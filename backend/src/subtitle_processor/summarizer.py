@@ -9,7 +9,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 client = OpenAI(api_key=os.getenv("OPENROUTER_API_KEY"), base_url="https://openrouter.ai/api/v1")
 
 @retry(wait=wait_exponential(multiplier=1, min=4, max=10), stop=stop_after_attempt(5))
-def summarize_text(text: str, model: str = "openai/gpt-3.5-turbo") -> str:
+def summarize_text(text: str, model: str = "microsoft/phi-3.5-mini-128k-instruct") -> str:
     """
     Summarizes a given text using the specified AI model.
     Includes exponential backoff for retries on failures.

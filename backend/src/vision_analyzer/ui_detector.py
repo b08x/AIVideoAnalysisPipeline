@@ -1,6 +1,8 @@
 # vision_analyzer/ui_detector.py
 import easyocr
 import numpy as np
+import os
+import shutil
 from typing import List
 from vision_analyzer.models import DetectedElement
 
@@ -11,7 +13,31 @@ class UIDetector:
     def __init__(self, languages: List[str] = ['en']):
         # This will download the model on the first run.
         # It's recommended to have this pre-downloaded in the Docker image.
-        self.reader = easyocr.Reader(languages, gpu=False) # Set gpu=True if a GPU is available
+        self.reader = None
+        self.languages = languages
+        self._initialize_reader()
+
+    def _initialize_reader(self):
+        """Initialize EasyOCR reader with error handling for corrupted models."""
+        try:
+            self.reader = easyocr.Reader(self.languages, gpu=False) # Set gpu=True if a GPU is available
+        except Exception as e:
+            print(f"Error initializing EasyOCR reader: {e}")
+            # Try to clear the model cache and retry
+            try:
+                print("Attempting to clear EasyOCR model cache...")
+                # Clear the EasyOCR model cache directory
+                cache_dir = os.path.expanduser('~/.EasyOCR')
+                if os.path.exists(cache_dir):
+                    shutil.rmtree(cache_dir)
+                    print("EasyOCR cache cleared, retrying initialization...")
+                    self.reader = easyocr.Reader(self.languages, gpu=False)
+                else:
+                    print("EasyOCR cache directory not found, retrying initialization...")
+                    self.reader = easyocr.Reader(self.languages, gpu=False)
+            except Exception as retry_error:
+                print(f"Failed to initialize EasyOCR reader even after cache clear: {retry_error}")
+                self.reader = None
 
     def detect(self, image_path: str) -> List[DetectedElement]:
         """
@@ -23,6 +49,11 @@ class UIDetector:
         Returns:
             A list of DetectedElement objects.
         """
+        # Check if reader is initialized
+        if self.reader is None:
+            print(f"EasyOCR reader not initialized, skipping OCR for {image_path}")
+            return []
+            
         try:
             # The detail=1 parameter provides bounding box information
             ocr_results = self.reader.readtext(image_path, detail=1)

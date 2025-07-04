@@ -23,8 +23,8 @@ class ApiService {
         onProgress: (progress: number) => void
     ): Promise<UploadResponse> {
         const formData = new FormData();
-        formData.append('video', videoFile);
-        formData.append('subtitle', subtitleFile);
+        formData.append('video_file', videoFile);
+        formData.append('subtitle_file', subtitleFile);
         formData.append('config', JSON.stringify(modelConfig));
 
         // Use a relative URL for the API endpoint
@@ -65,7 +65,7 @@ class ApiService {
         // Dynamically construct WebSocket URL for reverse proxy
         const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsHost = window.location.host;
-        const wsUrl = `${wsProtocol}//${wsHost}/api/v1/jobs/${jobId}/progress`;
+        const wsUrl = `${wsProtocol}//${wsHost}/ws/jobs/${jobId}/progress`;
         
         this.ws = new WebSocket(wsUrl);
 
