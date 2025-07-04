@@ -28,16 +28,20 @@ services:
   # --- Infrastructure Services ---
 
   postgres:
-    image: postgres:15-alpine
+    image: ankane/pgvector
     container_name: video-analysis-postgres
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-video_processing}
-      POSTGRES_USER: ${POSTGRES_USER:-prod_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-prod_password}
+      - POSTGRES_HOST_AUTH_METHOD=trust
+      - POSTGRES_USER=videorag
+      - POSTGRES_PASSWORD=videorag
+      - POSTGRES_DB=video_processing
+    ports:
+      - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgresql_local_data:/data
+      - postgresql_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-prod_user} -d ${POSTGRES_DB:-video_processing}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -143,7 +147,9 @@ services:
 # --- Volumes and Networks ---
 
 volumes:
-  postgres_data:
+  postgresql_data:
+    driver: local
+  postgresql_local_data:
     driver: local
   redis_data:
     driver: local
