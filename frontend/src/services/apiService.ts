@@ -10,12 +10,10 @@ import { ApiError, withRetry } from '../utils/errorHandling';
 import { uploadWithProgress } from '../utils/uploadWithProgress';
 
 class ApiService {
-    private baseUrl: string;
     private ws: WebSocket | null = null;
 
     constructor() {
-        // Connect directly to backend - no proxy
-        this.baseUrl = import.meta.env.VITE_APP_API_URL || 'http://localhost:8000';
+        // Base URL is no longer needed, as we'll use relative paths
     }
 
     public async uploadAndProcess(
@@ -29,14 +27,15 @@ class ApiService {
         formData.append('subtitle', subtitleFile);
         formData.append('config', JSON.stringify(modelConfig));
 
-        // Connect directly to backend
-        const url = `${this.baseUrl}/api/v1/jobs`;
+        // Use a relative URL for the API endpoint
+        const url = '/api/v1/jobs';
         return uploadWithProgress<UploadResponse>(url, formData, onProgress);
     }
 
     public async getJobStatus(jobId: string): Promise<JobResponse> {
         const fn = async () => {
-            const response = await fetch(`${this.baseUrl}/api/v1/jobs/${jobId}`);
+            // Use a relative URL
+            const response = await fetch(`/api/v1/jobs/${jobId}`);
             if (!response.ok) {
                 throw new ApiError('Failed to get job status', response.status);
             }
@@ -46,7 +45,8 @@ class ApiService {
     }
 
     public async cancelJob(jobId: string): Promise<void> {
-        const response = await fetch(`${this.baseUrl}/api/v1/jobs/${jobId}`, {
+        // Use a relative URL
+        const response = await fetch(`/api/v1/jobs/${jobId}`, {
             method: 'DELETE',
         });
         if (!response.ok && response.status !== 204) {
@@ -62,9 +62,10 @@ class ApiService {
         if (this.ws) {
             this.ws.close();
         }
-        // Build WebSocket URL for direct backend connection
-        const wsProtocol = this.baseUrl.startsWith('https') ? 'wss:' : 'ws:';
-        const wsUrl = `${wsProtocol}//localhost:8000/api/v1/jobs/${jobId}/progress`;
+        // Dynamically construct WebSocket URL for reverse proxy
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsHost = window.location.host;
+        const wsUrl = `${wsProtocol}//${wsHost}/api/v1/jobs/${jobId}/progress`;
         
         this.ws = new WebSocket(wsUrl);
 

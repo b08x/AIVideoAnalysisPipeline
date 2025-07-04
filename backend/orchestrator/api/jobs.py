@@ -10,24 +10,8 @@ from fastapi import (
 from sqlalchemy.orm import Session
 import os
 import shutil
-import models
-# from tasks import process_video_job  # Temporarily commented to fix startup
-
-router = APIRouter()
-
-# Simple health check endpoint
-@router.get("/health")
-def health_check():
-    """Health check endpoint."""
-    return {"status": "healthy", "service": "orchestrator"}
-
-# Dependency to get a DB session
-def get_db():
-    db = models.SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+from models import Job, JobStatus
+from tasks import process_video_job
 
 
 # Define file size limits
@@ -37,30 +21,46 @@ SHARED_STORAGE_PATH = "/shared"
 
 
 @router.post("/jobs", status_code=202)
-async def create_job(request: Request):
+async def create_job(
+    video_file: UploadFile = File(...),
+    subtitle_file: UploadFile = File(None),
+    db: Session = Depends(get_db),
+):
     """
-    Create a test processing job (accepts form data but returns mock response for now).
+    Handles file uploads, creates a job record, and dispatches the main processing task.
     """
-    # Read and consume the request body to prevent connection issues
-    try:
-        form = await request.form()
-        video_file = form.get("video")
-        subtitle_file = form.get("subtitle") 
-        config = form.get("config")
-        
-        # Log what we received for debugging
-        print(f"Received files: video={video_file.filename if video_file else None}, subtitle={subtitle_file.filename if subtitle_file else None}")
-        print(f"Config: {config}")
-        
-    except Exception as e:
-        print(f"Error reading form data: {e}")
-    
-    # Return a mock response for now
-    return {
-        "job_id": 123, 
-        "status": "pending", 
-        "message": "Test job created successfully - files received and processing will be implemented soon"
-    }
+    # Create a new job record in the database
+    new_job = Job(status=JobStatus.PENDING)
+    db.add(new_job)
+    db.commit()
+    db.refresh(new_job)
+    job_id = new_job.id
+
+    # Define storage path for this job
+    job_storage_path = os.path.join(SHARED_STORAGE_PATH, str(job_id))
+    os.makedirs(job_storage_path, exist_ok=True)
+
+    # Save video file
+    video_file_path = os.path.join(job_storage_path, video_file.filename)
+    with open(video_file_path, "wb") as buffer:
+        shutil.copyfileobj(video_file.file, buffer)
+
+    # Save subtitle file if provided
+    subtitle_file_path = None
+    if subtitle_file:
+        subtitle_file_path = os.path.join(job_storage_path, subtitle_file.filename)
+        with open(subtitle_file_path, "wb") as buffer:
+            shutil.copyfileobj(subtitle_file.file, buffer)
+
+    # Update the job record with file paths
+    new_job.video_file_path = video_file_path
+    new_job.subtitle_file_path = subtitle_file_path
+    db.commit()
+
+    # Dispatch the background task
+    process_video_job.delay(job_id, video_file_path, subtitle_file_path)
+
+    return {"job_id": job_id, "status": "pending"}
 
 
 @router.get("/jobs/{job_id}")
