@@ -8,6 +8,13 @@ AI Video Analysis Pipeline - A full-stack application that analyzes videos using
 
 ## Commands
 
+### Quick Development
+
+- `make up-dev` - Start development environment (shortcut for docker-compose)
+- `make down-dev` - Stop development environment
+- `make logs-dev` - View development logs
+- `make build-dev` - Build development services only
+
 ### Frontend Development
 
 - `cd frontend && npm install` - Install frontend dependencies
@@ -23,11 +30,47 @@ AI Video Analysis Pipeline - A full-stack application that analyzes videos using
 - `docker-compose -f docker-compose.dev.yml logs -f [service]` - View logs for specific service
 - `docker-compose -f docker-compose.dev.yml exec orchestrator bash` - Access orchestrator shell
 
+### Production Deployment
+
+- `make build-prod` - Build production services with cache optimization
+- `make up-prod` - Start production environment with Nginx
+- `make down-prod` - Stop production environment
+- `make logs-prod` - View production logs
+- `make analyze-image` - Analyze Docker image size and layers
+
+### Maintenance & Debugging
+
+- `make clean` - Stop containers and remove volumes
+- `make clean-all` - Complete cleanup including images
+- `make help` - Show all available Makefile commands
+
 ### Environment Setup
 
 - Backend: Copy `backend/.env.template` to `backend/.env` and configure API keys
 - Frontend: Copy `frontend/.env.local.example` to `frontend/.env.local`
 - Required API keys: `OPENROUTER_API_KEY`, `GEMINI_API_KEY`
+
+### Environment Variables
+
+**Backend (.env)**:
+```
+OPENROUTER_API_KEY="your_openrouter_api_key_for_claude_etc"
+GEMINI_API_KEY="your_gemini_api_key_for_vision"
+DATABASE_URL="postgresql://dev_user:dev_password@postgres:5432/video_processing"
+REDIS_URL="redis://redis:6379/0"
+STORAGE_ENDPOINT="http://minio:9000"
+MINIO_ROOT_USER="minioadmin"
+MINIO_ROOT_PASSWORD="minioadmin123"
+CORS_ORIGINS="http://localhost:3000,http://localhost:5173"
+```
+
+**Frontend (.env.local)**:
+```
+GEMINI_API_KEY="your_gemini_api_key_here"
+VITE_APP_API_URL="http://localhost:8000"
+VITE_APP_WS_URL="ws://localhost:8000"
+VITE_APP_USE_BACKEND=true
+```
 
 ## Architecture
 
@@ -95,6 +138,34 @@ The system supports multiple AI models through OpenRouter and direct APIs:
 ### Development Workflow
 
 The codebase supports hot-reload development with Docker volume mounting for backend services and Vite HMR for frontend. The frontend proxies API requests to the backend during development, enabling seamless full-stack development experience.
+
+## Testing & Code Quality
+
+### Current Status
+
+The project currently focuses on functionality and deployment. No formal testing or linting frameworks are configured yet.
+
+### TypeScript Type Checking
+
+- Frontend uses strict TypeScript configuration with compiler-based linting
+- `cd frontend && npx tsc --noEmit` - Type check without emitting files
+
+### Docker Health Checks
+
+All services include health checks for monitoring:
+- PostgreSQL: `pg_isready` command
+- Redis: `redis-cli ping` command  
+- MinIO: HTTP health endpoint check
+- Orchestrator: `/health` endpoint check
+- Celery Workers: `celery inspect ping` command
+
+### Recommendations for Future Development
+
+When implementing testing, consider:
+- **Backend**: pytest, pytest-asyncio, pytest-cov for Python testing
+- **Frontend**: Vitest + Testing Library for React component testing
+- **Linting**: flake8/ruff for Python, ESLint for TypeScript
+- **Formatting**: black for Python, Prettier for TypeScript
 
 ## CLI and External Tools
 
