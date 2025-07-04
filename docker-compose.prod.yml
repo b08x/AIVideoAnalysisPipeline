@@ -41,7 +41,7 @@ services:
       - postgresql_local_data:/data
       - postgresql_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      test: ["CMD-SHELL", "pg_isready -U videorag -d video_processing"]
       interval: 10s
       timeout: 5s
       retries: 5
