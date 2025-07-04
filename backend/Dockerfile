@@ -81,7 +81,7 @@ COPY ./src ./
 # Set up environment variables for Python virtual environment
 ENV VIRTUAL_ENV=/app/venv
 ENV PATH="/app/venv/bin:${PATH}"
-ENV PYTHONPATH="/app:${PYTHONPATH}"
+ENV PYTHONPATH="/app:${PYTHONPATH:-}"
 ENV PYTHONUNBUFFERED=1
 
 # Set default working directory
