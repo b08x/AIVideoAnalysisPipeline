@@ -10,14 +10,28 @@ from fastapi import (
 from sqlalchemy.orm import Session
 import os
 import shutil
-from models import Job, JobStatus
-from tasks import process_video_job
+import orchestrator.models as models
+from orchestrator.models import Job, JobStatus
+from orchestrator.tasks import process_video_job
+
+
+# Dependency to get a DB session
+def get_db():
+    db = models.SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 
 
 # Define file size limits
 MAX_VIDEO_SIZE = 2 * 1024 * 1024 * 1024  # 2 GB
 MAX_SUBTITLE_SIZE = 10 * 1024 * 1024  # 10 MB
 SHARED_STORAGE_PATH = "/shared"
+
+router = APIRouter()
+
 
 
 @router.post("/jobs", status_code=202)

@@ -1,7 +1,7 @@
 # vision_analyzer/tasks.py
 import os
 from celery import Celery, group
-from analyzer import process_single_frame
+from vision_analyzer.analyzer import process_single_frame
 
 # Celery configuration
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")

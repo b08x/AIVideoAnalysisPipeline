@@ -1,8 +1,8 @@
 # orchestrator/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api import jobs, websocket
-from models import create_db_and_tables
+from orchestrator.api import jobs, websocket
+from orchestrator.models import create_db_and_tables
 import os
 
 # Create the FastAPI app
@@ -20,7 +20,8 @@ app.add_middleware(
 
 # Include API routers
 app.include_router(jobs.router, prefix="/api/v1", tags=["Jobs"])
-app.include_router(websocket.router, prefix="/api/v1", tags=["Progress"])
+app.include_router(websocket.router, prefix="/ws", tags=["Progress"])
+
 
 
 @app.on_event("startup")

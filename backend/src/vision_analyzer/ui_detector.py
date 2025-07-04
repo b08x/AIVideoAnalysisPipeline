@@ -2,7 +2,7 @@
 import easyocr
 import numpy as np
 from typing import List
-from models import DetectedElement
+from vision_analyzer.models import DetectedElement
 
 class UIDetector:
     """

@@ -3,9 +3,9 @@ import os
 import base64
 from openai import OpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential
-from prompts import create_vision_prompt
-from ui_detector import UIDetector
-from models import FrameAnalysis
+from vision_analyzer.prompts import create_vision_prompt
+from vision_analyzer.ui_detector import UIDetector
+from vision_analyzer.models import FrameAnalysis
 
 # Initialize the AI client for vision analysis
 # Using OpenRouter to potentially access various models like GPT-4V or Claude Vision

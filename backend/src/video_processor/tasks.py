@@ -1,9 +1,9 @@
 # video_processor/tasks.py
 import os
 from celery import Celery
-from validator import VideoValidator
-from segmenter import VideoSegmenter
-from frame_extractor import FrameExtractor
+from video_processor.validator import VideoValidator
+from video_processor.segmenter import VideoSegmenter
+from video_processor.frame_extractor import FrameExtractor
 
 # Celery configuration
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")

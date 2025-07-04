@@ -3,8 +3,8 @@ from typing import List
 from sentence_transformers import SentenceTransformer
 from sklearn.cluster import KMeans
 import numpy as np
-from models import Utterance, Topic
-from summarizer import summarize_text
+from subtitle_processor.models import Utterance, Topic
+from subtitle_processor.summarizer import summarize_text
 
 # Load a pre-trained model for sentence embeddings
 # This model is downloaded once and cached.

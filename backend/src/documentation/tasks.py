@@ -1,8 +1,8 @@
 # documentation/tasks.py
 import os
 from celery import Celery
-from generator import ReportGenerator
-from exporters import ReportExporter
+from documentation.generator import ReportGenerator
+from documentation.exporters import ReportExporter
 
 # Celery configuration
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")

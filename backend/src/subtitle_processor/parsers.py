@@ -1,7 +1,7 @@
 # subtitle_processor/parsers.py
 import re
 from typing import List
-from models import Utterance
+from subtitle_processor.models import Utterance
 
 def timecode_to_seconds(tc: str) -> float:
     """Converts a timecode string (HH:MM:SS.ms) to seconds."""

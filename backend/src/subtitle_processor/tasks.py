@@ -1,10 +1,10 @@
 # subtitle_processor/tasks.py
 import os
 from celery import Celery
-from parsers import parse_subtitles
-from summarizer import summarize_text
-from topic_extractor import extract_topics
-from models import SubtitleAnalysisResult
+from subtitle_processor.parsers import parse_subtitles
+from subtitle_processor.summarizer import summarize_text
+from subtitle_processor.topic_extractor import extract_topics
+from subtitle_processor.models import SubtitleAnalysisResult
 
 # Celery configuration
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")

@@ -60,30 +60,20 @@ services:
 
   # --- Application Services ---
 
-  base:
+  api:
     build:
-      context: .
-      dockerfile: backend/base/Dockerfile
-    image: video-processing/base:latest
-    # This service only builds the base image and does not need to run.
-    # We keep it here so other services can depend on it.
-
-  orchestrator:
-    build:
-      context: ./backend/orchestrator
+      context: ./backend
       dockerfile: Dockerfile
-    container_name: video-analysis-orchestrator
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    container_name: video-analysis-api
+    command: uvicorn orchestrator.main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
-      - ./backend/orchestrator:/home/app/orchestrator
+      - ./backend/src:/home/app
       - shared_storage:/shared
     ports:
       - "8000:8000"
     env_file:
       - ./backend/.env
     depends_on:
-      base:
-        condition: service_started
       postgres:
         condition: service_healthy
       redis:
@@ -93,75 +83,20 @@ services:
     networks:
       - video-analysis-net
 
-  subtitle_processor:
+  worker:
     build:
-      context: ./backend/subtitle_processor
+      context: ./backend
       dockerfile: Dockerfile
-    container_name: video-analysis-subtitle-worker
-    command: celery -A tasks.celery_app worker --loglevel=info -Q subtitle_tasks
+    container_name: video-analysis-worker
+    command: celery -A orchestrator.tasks.celery_app worker --loglevel=info -Q high_priority,default
     volumes:
-      - ./backend/subtitle_processor:/home/app/subtitle_processor
+      - ./backend/src:/home/app
       - shared_storage:/shared
     env_file:
       - ./backend/.env
     depends_on:
-      - base
       - redis
-      - orchestrator
-    networks:
-      - video-analysis-net
-
-  video_processor:
-    build:
-      context: ./backend/video_processor
-      dockerfile: Dockerfile
-    container_name: video-analysis-video-worker
-    command: celery -A tasks.celery_app worker --loglevel=info -Q video_tasks
-    volumes:
-      - ./backend/video_processor:/home/app/video_processor
-      - shared_storage:/shared
-    env_file:
-      - ./backend/.env
-    depends_on:
-      - base
-      - redis
-      - orchestrator
-    networks:
-      - video-analysis-net
-
-  vision_analyzer:
-    build:
-      context: ./backend/vision_analyzer
-      dockerfile: Dockerfile
-    container_name: video-analysis-vision-worker
-    command: celery -A tasks.celery_app worker --loglevel=info -Q vision_tasks
-    volumes:
-      - ./backend/vision_analyzer:/home/app/vision_analyzer
-      - shared_storage:/shared
-    env_file:
-      - ./backend/.env
-    depends_on:
-      - base
-      - redis
-      - orchestrator
-    networks:
-      - video-analysis-net
-
-  documentation_service:
-    build:
-      context: ./backend/documentation
-      dockerfile: Dockerfile
-    container_name: video-analysis-doc-worker
-    command: celery -A tasks.celery_app worker --loglevel=info -Q doc_tasks
-    volumes:
-      - ./backend/documentation:/home/app/documentation
-      - shared_storage:/shared
-    env_file:
-      - ./backend/.env
-    depends_on:
-      - base
-      - redis
-      - orchestrator
+      - api
     networks:
       - video-analysis-net
 
